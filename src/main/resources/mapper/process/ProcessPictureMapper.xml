@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.glory.process.mapper.process.ProcessPictureMapper">
+    <!--批量添加 -->
+    <insert id="insertProcessPictureList" parameterType="java.util.List"  useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO process_picture(process_id,type,path,text,version)
+        values
+        <foreach collection="list" item="params" index="index"
+                 separator=",">
+            (
+            #{params.processId},
+            #{params.type},
+            #{params.path},
+            #{params.text},
+            #{params.version}
+            )
+        </foreach>
+    </insert>
+
+    <select id="selectProcessPictureForProcessId" resultType="com.glory.process.model.product.ProcessPicture">
+        select id,process_id as processId,type,path,text,version from process_picture where process_id =#{processId}
+        <if test="type != null">
+            and type = #{type}
+        </if>
+        <if test="version != null">
+            and version = #{version}
+        </if>
+        <if test="path != null">
+            and path =#{path}
+        </if>
+    </select>
+
+    <select id="selectProcessPictureList" resultMap="BaseResultMap">
+          select p.* from process_picture p where p.process_id =#{processId}
+    </select>
+
+    <resultMap id="BaseResultMap" type="com.glory.process.model.product.ProcessPicture">
+        <id column="id" jdbcType="INTEGER" property="id" />
+        <result column="process_id" property="processId" />
+        <result column="type" jdbcType="VARCHAR" property="type" />
+        <result column="path" jdbcType="VARCHAR" property="path" />
+        <result column="text" jdbcType="VARBINARY" property="text" />
+        <result column="version" jdbcType="VARCHAR" property="version" />
+    </resultMap>
+
+    <update id="updateByProcessPicture">
+         update process_picture set process_id = #{processPicture.processId},type = #{processPicture.type},path=#{processPicture.path},text = #{processPicture.text},version = #{processPicture.version}
+          where id = #{processPicture.id}
+    </update>
+
+    <select id="selectProcessPicture" resultMap="BaseResultMap">
+        select * from process_picture where id = #{id}
+    </select>
+
+    <delete id="deleteProcessPicture">
+        delete from process_picture where id = #{id}
+    </delete>
+
+    <insert id="insertProcessPicture"  parameterType="com.glory.process.model.product.ProcessPicture" useGeneratedKeys="true" keyProperty="processPicture.id">
+        insert into process_picture(process_id,type,path,text,version)
+        values (
+            #{processPicture.processId},
+            #{processPicture.type},
+            #{processPicture.path},
+            #{processPicture.text},
+            #{processPicture.version}
+            )
+    </insert>
+</mapper>

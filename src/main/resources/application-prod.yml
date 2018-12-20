@@ -1,0 +1,91 @@
+## 线上环境
+logging:
+  level:
+    ROOT: INFO
+    org.springframework: INFO
+    java.sql.Connection: DEBUG
+    java.sql.Statement: DEBUG
+    org.apache: INFO
+    org.mongodb.driver: INFO
+    com.glory.process: DEBUG
+spring:
+
+    jackson:
+        date-format: yyyy-MM-dd HH:mm:ss
+        time-zone: GMT+8
+#        default-property-inclusion: non_null
+        #设置空如何序列化
+        defaultPropertyInclusion: ALWAYS
+        ##sqlserver
+    datasource:
+        url: jdbc:sqlserver://localhost:2430;DatabaseName=GloryProcess
+        driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+        username: ag
+        password: QWEqweasd
+        initial-size: 1
+        min-idle: 1
+        max-active: 20
+        test-on-borrow: true
+        max-wait: 60000
+        time-between-eviction-runs-millis: 60000
+        min-evictable-idle-time-millis: 300000
+        validation-query: SELECT 1 FROM DUAL
+        test-While-Idle: true
+        test-on-return: false
+        pool-prepared-statements: false
+        max-pool-prepared-statement-per-connection-size: 20
+        filters: stat,wall,log4j,config
+
+    sleuth:
+      enabled: true
+      http:
+        legacy:
+          enabled: true
+sample:
+  zipkin:
+    # When enabled=false, traces log to the console. Comment to send to zipkin
+    enabled: false
+
+mybatis:
+    configuration:
+      call-setters-on-nulls: true
+    basepackage: com.glory.process.mapper
+    xmlLocation: classpath:mapper/**/*.xml
+    mapper-locations: "classpath*:mapper/**/*.xml"
+
+
+#redis-cache 相关
+#redis:
+#    pool:
+#         maxActive: 300
+#         maxIdle: 100
+#         maxWait: 1000
+#    host: ${REDIS_HOST:localhost}
+#    port:  ${REDIS_PORT:6379}
+#    password:
+#    timeout: 2000
+#    # 服务或应用名
+#    sysName: ace-process
+#    enable: true
+#    database: 0
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  security:
+    enabled: false
+
+jwt:
+  token-header: Authorization
+  expire: 14400
+  rsa-secret: xx1WET12^%3^(WE45
+client:
+  rsa-secret: x2318^^(*WRYQWR(QW&T
+
+datasource_1:
+  url: jdbc:sqlserver://localhost:2430;DatabaseName=GloryProcess
+  driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  username: ag
+  password: QWEqweasd

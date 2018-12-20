@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.glory.process.mapper.process.ProcessMapper">
+    <resultMap id="BaseResultMap" type="com.glory.process.model.product.Process">
+        <result column="id" property="id"/>
+        <result column="status" property="status"/>
+        <result column="u9_coding" property="u9Coding"/>
+        <result column="product_model" property="productModel"/>
+        <result column="customer" property="customer"/>
+        <result column="version" property="version"/>
+        <result column="file_coding" property="fileCoding"/>
+        <result column="issue_coding" property="issueCoding"/>
+        <result column="issue_date" property="issueDate"/>
+        <result column="update_date" property="updateDate"/>
+        <result column="spraying_color" property="sprayingColor"/>
+        <result column="steel_seal" property="steelSeal"/>
+        <result column="move_seal" property="moveSeal"/>
+        <result column="pof_plastic_products" property="pofPlasticProducts"/>
+        <result column="box_plastic" property="boxPlastic"/>
+        <result column="case_plastic" property="casePlastic"/>
+        <result column="box1_label" property="box1Label"/>
+        <result column="box1_num" property="box1Num"/>
+        <result column="box2_label" property="box2Label"/>
+        <result column="box2_num" property="box2Num"/>
+        <result column="case1_label" property="case1Label"/>
+        <result column="case1_num" property="case1Num"/>
+        <result column="case2_label" property="case2Label"/>
+        <result column="case2_num" property="case2Num"/>
+        <result column="instructions" property="instructions"/>
+        <result column="qualified_certificate" property="qualifiedCertificate"/>
+        <result column="sealing_paste" property="sealingPaste"/>
+        <result column="packaging_tape" property="packagingTape"/>
+        <result column="packaging_tape_number" property="packagingTapeNumber"/>
+        <result column="sealing_gummed_paper" property="sealingGummedPaper"/>
+        <result column="process1_picture_id" property="process1PictureId"/>
+        <result column="process2_picture_id" property="process2PictureId"/>
+        <result column="process3_picture_id" property="process3PictureId"/>
+        <result column="process4_picture_id" property="process4PictureId"/>
+    </resultMap>
+    <!--  模糊查询工艺型号-->
+    <select id="selectProcessU9Conding" resultType="java.util.HashMap">
+        select pro.u9_coding as u9Coding,pro.product_model as productModel from product_process pro
+        where version = (select max(version) from product_process where isnumeric(version)=1 and u9_coding = pro.u9_coding)
+        <if test="u9Coding != null">
+            and pro.u9_coding LIKE '%' + #{u9Coding, jdbcType=VARCHAR} + '%'
+        </if>
+</select>
+
+
+    <select id="selectProcess" resultType="java.util.HashMap">
+          select pro.status as status, pro.id as id,pro.u9_coding as u9Coding,pro.product_model as productModel,pro.customer,pro.version,pro.file_coding as fileCoding,v.value3_53 as boxNumber,v.value3_52 as caseNumber
+        from product_process pro left join view_bom_item v on pro.u9_coding = v.code
+        where 1=1
+        <if test="u9Coding != null">
+            and pro.u9_coding LIKE '%' + #{u9Coding, jdbcType=VARCHAR} + '%'
+        </if>
+        <if test="customer != null">
+            and pro.customer LIKE '%' + #{customer, jdbcType=VARCHAR} + '%'
+        </if>
+        <if test="version != null">
+            and pro.version LIKE '%' + #{version, jdbcType=VARCHAR} + '%'
+        </if>
+    </select>
+    <!-- 查询工艺信息 -->
+    <select id="selectProcessForMaxVersion" resultType="java.util.HashMap">
+        select pro.status as status, pro.id as id,pro.u9_coding as u9Coding,pro.product_model as productModel,pro.customer,pro.version,pro.file_coding as fileCoding,v.value3_53 as boxNumber,v.value3_52 as caseNumber
+        from product_process pro left join view_bom_item v on pro.u9_coding = v.code
+        where pro.version = (select max(version) from product_process where isnumeric(version)=1 and u9_coding = pro.u9_coding
+        <if test="status != null">
+            and status = #{status,jdbcType=INTEGER}
+        </if>
+        )
+        <if test="u9Coding != null">
+            and pro.u9_coding LIKE '%' + #{u9Coding, jdbcType=VARCHAR} + '%'
+        </if>
+        <if test="customer != null">
+            and pro.customer LIKE '%' + #{customer, jdbcType=VARCHAR} + '%'
+        </if>
+        <if test="status != null">
+            and pro.status = #{status,jdbcType=INTEGER}
+        </if>
+        <if test="version != null">
+            and pro.version LIKE '%' +#{version,jdbcType=VARCHAR}+ '%'
+        </if>
+        order by pro.upd_time DESC
+    </select>
+
+    <!-- 查询出最新版本的数据-->
+    <select id="selectTopProcess" resultMap="BaseResultMap">
+		   select TOP 1* from product_process where u9_coding =#{u9Coding, jdbcType=VARCHAR} ORDER BY version DESC
+    </select>
+
+    <select id="historyVersion" resultType="java.util.HashMap">
+        select pro.status as status, pro.id as id,pro.u9_coding as u9Coding,pro.product_model as productModel,pro.customer,pro.version,pro.file_coding as fileCoding,v.value3_53 as boxNumber,v.value3_52 as caseNumber
+        from product_process pro left join view_bom_item v on pro.u9_coding = v.code
+         where u9_coding = #{u9Coding, jdbcType=VARCHAR}
+    </select>
+
+    <!-- u9Coding编码查询最新版本 -->
+    <select id="selectMaxVersionForU9Coding" resultType="java.lang.String">
+        select max(version) version from product_process where isnumeric(version)=1 and u9_coding = #{u9Coding, jdbcType=VARCHAR}
+        <if test="id != null">
+            and id != #{id,jdbcType=INTEGER}
+        </if>
+    </select>
+
+
+    <!--批量作废 -->
+    <update id="updateInvalid" parameterType="java.util.List">
+        <if test="list !=null and list.size > 0">
+        update product_process
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="status =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                   when id=#{item.id} then #{item.status}
+                </foreach>
+            </trim>
+        </trim>
+        where id in
+        <foreach collection="list" index="index" item="item" separator="," open="(" close=")">
+            #{item.id,jdbcType=INTEGER}
+        </foreach>
+        </if>
+    </update>
+
+    <update id = "updateProcess">
+        update product_process  set status = 1
+        <if test="process.customer !=''">
+            ,customer = #{process.customer}
+        </if>
+        <if test="process.productModel != ''">
+            ,product_model = #{process.productModel}
+        </if>
+        <if test="process.version != ''">
+            ,version = #{process.version}
+        </if>
+        <if test="process.fileCoding != ''">
+            ,file_coding = #{process.fileCoding}
+        </if>
+        <if test="process.issueDate !=null ">
+            ,issue_date = #{process.issueDate ,jdbcType=DATE}
+        </if>
+        <if test="process.updateDate !=null">
+            ,update_date = #{process.updateDate,jdbcType=DATE}
+        </if>
+        <if test="process.sprayingColor != ''">
+            ,spraying_color = #{process.sprayingColor}
+        </if>
+        <if test="process.steelSeal != ''">
+            ,steel_seal = #{process.steelSeal}
+        </if>
+        <if test="process.moveSeal != ''">
+            ,move_seal = #{process.moveSeal}
+        </if>
+        <if test="process.pofPlasticProducts != ''">
+            ,pof_plastic_products = #{process.pofPlasticProducts}
+        </if>
+        <if test="process.boxPlastic != ''">
+            ,box_plastic = #{process.boxPlastic}
+        </if>
+        <if test="process.casePlastic != ''">
+            ,case_plastic = #{process.casePlastic}
+        </if>
+        <if test="process.box1Label != ''">
+            ,box1_label = #{process.box1Label}
+        </if>
+        <if test="process.box1Num != ''">
+            ,box1_num = #{process.box1Num}
+        </if>
+        <if test="process.box2Label != ''">
+            ,box2_label = #{process.box2Label}
+        </if>
+        <if test="process.box2Num != ''">
+            ,box2_num = #{process.box2Num}
+        </if>
+        <if test="process.case1Label != ''">
+            ,case1_label = #{process.case1Label}
+        </if>
+        <if test="process.case1Num != ''">
+            ,case1_num = #{process.case1Num}
+        </if>
+        <if test="process.case2Label != ''">
+            ,case2_label = #{process.case2Label}
+        </if>
+        <if test="process.case2Num != ''">
+            ,case2_num = #{process.case2Num}
+        </if>
+        <if test="process.instructions != ''">
+            ,instructions = #{process.instructions}
+        </if>
+        <if test="process.qualifiedCertificate != ''">
+            ,qualified_certificate = #{process.qualifiedCertificate}
+        </if>
+        <if test="process.sealingPaste != ''">
+            ,sealing_paste = #{process.sealingPaste}
+        </if>
+        <if test="process.packagingTape != ''">
+            ,packaging_tape = #{process.packagingTape}
+        </if>
+        <if test="process.packagingTapeNumber != ''">
+            ,packaging_tape_number = #{process.packagingTapeNumber}
+        </if>
+        <if test="process.sealingGummedPaper != ''">
+            ,sealing_gummed_paper = #{process.sealingGummedPaper}
+        </if>
+         where u9_coding = #{process.u9Coding, jdbcType=VARCHAR}  and  version = #{process.version, jdbcType=VARCHAR}
+    </update>
+
+    <update id="updateRegainVersion">
+        update product_process set status = 1
+          where u9_coding = #{u9Coding, jdbcType=VARCHAR}  and  version = #{version, jdbcType=VARCHAR}
+    </update>
+
+    <update id="updateInvalidVersion">
+      update product_process set status = 0 where id = #{id,jdbcType=INTEGER} and u9_coding = #{u9Coding, jdbcType=VARCHAR}
+    </update>
+
+
+    <insert id="insertProcess" parameterType="com.glory.process.model.product.Process" useGeneratedKeys="true" keyProperty="process.id">
+        INSERT INTO product_process(u9_coding,product_model,customer,version,file_coding,issue_date,update_date,spraying_color,steel_seal,move_seal,pof_plastic_products,box_plastic,case_plastic,box1_label,box1_num,box2_label,box2_num,case1_label,case1_num,case2_label,case2_num,instructions,qualified_certificate,sealing_paste,packaging_tape,packaging_tape_number,sealing_gummed_paper,crt_time,crt_user,crt_name,crt_host,upd_time,upd_user,upd_name,upd_host)
+        values
+        (
+        #{process.u9Coding,jdbcType=VARCHAR},
+            #{process.productModel,jdbcType=VARCHAR},
+            #{process.customer,jdbcType=VARCHAR},
+            #{process.version,jdbcType=VARCHAR},
+            #{process.fileCoding,jdbcType=VARCHAR},
+            #{process.issueDate,jdbcType=DATE},
+            #{process.updateDate,jdbcType=DATE},
+            #{process.sprayingColor,jdbcType=VARCHAR},
+            #{process.steelSeal,jdbcType=VARCHAR},
+            #{process.moveSeal,jdbcType=VARCHAR},
+            #{process.pofPlasticProducts,jdbcType=VARCHAR},
+            #{process.boxPlastic,jdbcType=VARCHAR},
+            #{process.casePlastic,jdbcType=VARCHAR},
+            #{process.box1Label,jdbcType=VARCHAR},
+            #{process.box1Num,jdbcType=INTEGER},
+            #{process.box2Label,jdbcType=VARCHAR},
+            #{process.box2Num,jdbcType=INTEGER},
+            #{process.case1Label,jdbcType=VARCHAR},
+            #{process.case1Num,jdbcType=INTEGER},
+            #{process.case2Label,jdbcType=VARCHAR},
+            #{process.case2Num,jdbcType=INTEGER},
+            #{process.instructions,jdbcType=VARCHAR},
+            #{process.qualifiedCertificate,jdbcType=VARCHAR},
+            #{process.sealingPaste,jdbcType=VARCHAR},
+            #{process.packagingTape,jdbcType=VARCHAR},
+            #{process.packagingTapeNumber,jdbcType=INTEGER},
+            #{process.sealingGummedPaper,jdbcType=VARCHAR},
+            #{process.crtTime},
+            #{process.crtUser},
+            #{process.crtName},
+            #{process.crtHost},
+            #{process.updTime},
+            #{process.updUser},
+            #{process.updName},
+            #{process.updHost}
+        )
+    </insert>
+    <!--批量添加 -->
+    <insert id="insertProcessList"  parameterType="java.util.ArrayList" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_process(u9_coding,product_model,customer,version,file_coding,issue_date,update_date,spraying_color,steel_seal,move_seal,pof_plastic_products,box_plastic,case_plastic,box1_label,box1_num,box2_label,box2_num,case1_label,case1_num,case2_label,case2_num,instructions,qualified_certificate,sealing_paste,packaging_tape,packaging_tape_number,sealing_gummed_paper,process1_picture_name,process2_picture_name,process3_picture_name,process4_picture_name)
+        values
+        <foreach collection="list" item="params" index="index"
+                 separator=",">
+            (
+            #{params.u9Coding,jdbcType=VARCHAR},
+            #{params.productModel,jdbcType=VARCHAR},
+            #{params.customer,jdbcType=VARCHAR},
+            #{params.version,jdbcType=VARCHAR},
+            #{params.fileCoding,jdbcType=VARCHAR},
+            #{params.issueDate,jdbcType=DATE},
+            #{params.updateDate,jdbcType=DATE},
+            #{params.sprayingColor,jdbcType=VARCHAR},
+            #{params.steelSeal,jdbcType=VARCHAR},
+            #{params.moveSeal,jdbcType=VARCHAR},
+            #{params.pofPlasticProducts,jdbcType=VARCHAR},
+            #{params.boxPlastic,jdbcType=VARCHAR},
+            #{params.casePlastic,jdbcType=VARCHAR},
+            #{params.box1Label,jdbcType=VARCHAR},
+            #{params.box1Num,jdbcType=INTEGER},
+            #{params.box2Label,jdbcType=VARCHAR},
+            #{params.box2Num,jdbcType=INTEGER},
+            #{params.case1Label,jdbcType=VARCHAR},
+            #{params.case1Num,jdbcType=INTEGER},
+            #{params.case2Label,jdbcType=VARCHAR},
+            #{params.case2Num,jdbcType=INTEGER},
+            #{params.instructions,jdbcType=VARCHAR},
+            #{params.qualifiedCertificate,jdbcType=VARCHAR},
+            #{params.sealingPaste,jdbcType=VARCHAR},
+            #{params.packagingTape,jdbcType=VARCHAR},
+            #{params.packagingTapeNumber,jdbcType=INTEGER},
+            #{params.sealingGummedPaper,jdbcType=VARCHAR},
+            #{params.process1PictureName,jdbcType=VARCHAR},
+            #{params.process2PictureName,jdbcType=VARCHAR},
+            #{params.process3PictureName,jdbcType=VARCHAR},
+            #{params.process4PictureName,jdbcType=VARCHAR}
+            )
+        </foreach>
+    </insert>
+</mapper>
